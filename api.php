@@ -75,6 +75,7 @@ $possible_url = array("get_employee",
     "Pin_Login",
     "test_connection",
     "get_current_job_number",
+    "add_user",
     "PunchIn"
 );
 $value = "An error has occured";
@@ -106,7 +107,8 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_url)) {
         case 'add_user':
             break;
         case 'get_all_employees':
-            $value = get_all_employees();
+//            $value = get_all_employees();
+            $value = "got here";
             break;
         case 'Pin_Login':
             if (isset($_POST["pin"])) {
@@ -116,11 +118,12 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_url)) {
             }
             break;
         case 'PunchIn':
-            if (isset($_POST["employeeId"])) {
-                $value = PunchIn($_POST['employeeId'], $_POST['type'], $_POST['open_status']);
-            } else {
-                $value = null;
-            }
+//            if (isset($_POST["employeeId"])) {
+//                $value = PunchIn($_POST['employeeId'], $_POST['type'], $_POST['open_status']);
+//            } else {
+//                $value = null;
+//            }
+            $value = "got here";
             break;
         default:
             break;
