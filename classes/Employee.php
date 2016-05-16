@@ -20,9 +20,13 @@ class Employee {
     public static function Login_PIN($pin) {
         return self::LoginViaPIN($pin);
     }
-    
-    public static function ReturnCurrentJobByEmployeeId($id){
+
+    public static function ReturnCurrentJobByEmployeeId($id) {
         return self::Get_Current_Job_By_Employee_Id($id);
+    }
+
+    public static function PunchIn($params) {
+        return self::PunchIntoClock($params);
     }
 
     /*
@@ -70,8 +74,8 @@ class Employee {
         $stmt->execute(array(
             ":pin" => $pin
         ));
-        $count = $stmt->fetchColumn();
 
+        $count = $stmt->fetchColumn();
         if (0 == $count) {
             return "";
         }
@@ -95,8 +99,26 @@ class Employee {
         }
         return $employee;
     }
-    
-    
+
+    private static function PunchIntoClock($params) {
+        try {
+            $db = new DBConnect();
+            $db = $db->DBObject;
+            $query = "INSERT INTO punches (id, id_users, id_jobs, timestamp, type, open_status)"
+                    . "VALUES (:id, :id_users, :id_jobs, :timestamp, :type, :open_status)";
+            $stmt = $db->prepare($query);
+            $stmt->execute(array(
+                ":id" => null,
+                ":id_users" => $params["employeeId"],
+                ":id_jobs" => 0,
+                ":timestamp" => null,
+                ":type" => 1, //TODO: Call a function to convert 'in' to 1
+                ":open_status" => $params["open_status"]
+            ));
+        } catch (Exception $ex) {
+            return $ex->getMessage();
+        }
+    }
 
     private static function Get_Current_Job_By_Employee_Id($id) {
         $db = new DBConnect();
@@ -131,8 +153,8 @@ class Employee {
         }
         return $punch;
     }
-    
-    private static function ConvertJobIdToJobNumber($id){
+
+    private static function ConvertJobIdToJobNumber($id) {
         $db = new DBConnect();
         $db = $db->DBObject;
 
@@ -152,4 +174,5 @@ class Employee {
         }
         return $punch;
     }
+
 }

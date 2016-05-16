@@ -41,6 +41,20 @@ function login_PIN($pin) {
     }
 }
 
+function PunchIn($employeeId, $type, $open_status) {
+    $params = [
+        "employeeId" => $employeeId,
+        "type" => $type,
+        "open_status" => $open_status
+    ];
+
+    try {
+        return Employee::PunchIn($params);
+    } catch (Exception $ex) {
+        return $ex->getMessage();
+    }
+}
+
 function test_connection() {
     $ConnectionStatus = new DBConnect();
     return $ConnectionStatus->CheckConnection();
@@ -56,7 +70,13 @@ function get_current_job_by_employee_id($id) {
     }
 }
 
-$possible_url = array("get_employee", "get_all_employees", "Pin_Login", "test_connection", "get_current_job_number");
+$possible_url = array("get_employee",
+    "get_all_employees",
+    "Pin_Login",
+    "test_connection",
+    "get_current_job_number",
+    "punch_in"
+);
 $value = "An error has occured";
 
 if (isset($_GET["action"]) && in_array($_GET["action"], $possible_url)) {
@@ -68,16 +88,6 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_url)) {
                 $value = "Missing Argument";
             }
             break;
-//        case "get_all_employees":
-//            $value = get_all_employees();
-//            break;
-//        case "login_PIN":
-//            if (isset($_GET["pin"])) {
-//                $value = login_pin($_GET["pin"]);
-//            } else {
-//                $value = "Missing Argument";
-//            }
-//            break;
         case "test_connection":
             $value = test_connection();
             break;
@@ -104,6 +114,14 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_url)) {
             } else {
                 $value = null;
             }
+            break;
+        case 'PunchIn':
+            if (isset($_POST["employeeId"])) {
+                $value = PunchIn($_POST['employeeId'], $_POST['type'], $_POST['open_status']);
+            } else {
+                $value = null;
+            }
+            break;
         default:
             break;
     }
