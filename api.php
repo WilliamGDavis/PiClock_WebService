@@ -75,7 +75,7 @@ $possible_url = array("get_employee",
     "Pin_Login",
     "test_connection",
     "get_current_job_number",
-    "punch_in"
+    "PunchIn"
 );
 $value = "An error has occured";
 
