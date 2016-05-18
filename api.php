@@ -1,69 +1,47 @@
 <?php
 
-require_once './classes/Employee.php';
 require_once './classes/DBConnect.php';
+require_once './classes/Employee.php';
+require_once './classes/Punch.php';
+require_once './classes/Authentication.php';
 
-function get_employee_by_id($id) {
-    $employee_info = array();
-
-    //Pull employee info and build a JSON array
-    switch ($id) {
-        case 1:
-            $employee_info = array("fname" => "Will", "mname" => "G", "lname" => "Davis");
-            break;
-        case 2:
-            $employee_info = array("fname" => "Henry", "mname" => "R", "lname" => "Jedynak");
-            break;
-        default:
-            break;
-    }
-
-    return $employee_info;
-}
 
 /*
  * Return the entire list of employees from the DB
  */
 
-function get_all_employees() {
+function EmployeeList() {
     try {
-        return Employee::ReturnAllEmployees();
+        return Employee::EmployeeList();
     } catch (Exception $ex) {
         return $ex->getMessage();
     }
 }
 
-function login_PIN($pin) {
+/*
+ * Function: Try logging in using a PIN
+ * Expected Result: An employee array with their data
+ */
+
+function PinLogin($pin) {
     try {
-        return Employee::Login_PIN($pin);
+        return Authentication::PinLogin($pin);
     } catch (Exception $ex) {
         return $ex->getMessage();
     }
 }
 
-function PunchIn($employeeId, $type, $open_status) {
-    $params = [
-        "employeeId" => $employeeId,
-        "type" => $type,
-        "open_status" => $open_status
-    ];
-
+function PunchIn($employeeId) {
     try {
-        return Employee::PunchIn($params);
+        return Punch::PunchIn($employeeId);
     } catch (Exception $ex) {
         return $ex->getMessage();
     }
 }
 
-function PunchOut($employeeId, $type, $open_status) {
-    $params = [
-        "employeeId" => $employeeId,
-        "type" => $type,
-        "open_status" => $open_status
-    ];
-
+function PunchOut($employeeId, $currentJobId) {
     try {
-        return Employee::PunchOut($params);
+        return Punch::PunchOut($employeeId, $currentJobId);
     } catch (Exception $ex) {
         return $ex->getMessage();
     }
@@ -98,7 +76,7 @@ function ChangeJob($employeeId, $jobId, $newJobId) {
     }
 }
 
-function JobLookup($jobDescription){
+function JobLookup($jobDescription) {
     try {
         return Employee::JobLookup($jobDescription);
     } catch (Exception $ex) {
@@ -106,9 +84,17 @@ function JobLookup($jobDescription){
     }
 }
 
-function JobPunch($employeeId, $newJobId){
+function JobPunch($employeeId, $newJobId) {
     try {
         return Employee::JobPunch($employeeId, $newJobId);
+    } catch (Exception $ex) {
+        return $ex->getMessage();
+    }
+}
+
+function PunchIntoJob($employeeId, $currentJobId, $newJobId){
+    try{
+        return Punch::PunchIntoJob($employeeId, $currentJobId, $newJobId);
     } catch (Exception $ex) {
         return $ex->getMessage();
     }
@@ -128,9 +114,9 @@ function get_current_job_by_employee_id($id) {
     }
 }
 
-$possible_url = array("get_employee",
-    "get_all_employees",
-    "Pin_Login",
+$possible_url = array(
+    "EmployeeList",
+    "PinLogin",
     "test_connection",
     "get_current_job_number",
     "add_user",
@@ -141,19 +127,13 @@ $possible_url = array("get_employee",
     "CheckCurrentJob",
     "ChangeJob",
     "JobLookup",
-    "JobPunch"
+    "JobPunch",
+    "PunchIntoJob"
 );
 $value = "An error has occured";
 
 if (isset($_GET["action"]) && in_array($_GET["action"], $possible_url)) {
     switch ($_GET["action"]) {
-        case "get_employee":
-            if (isset($_GET["id"])) {
-                $value = get_employee_by_id($_GET["id"]);
-            } else {
-                $value = "Missing Argument";
-            }
-            break;
         case "test_connection":
             $value = test_connection();
             break;
@@ -171,26 +151,26 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_url)) {
     switch ($_POST['action']) {
         case 'add_user':
             break;
-        case 'get_all_employees':
-            $value = get_all_employees();
+        case 'EmployeeList':
+            $value = EmployeeList();
             break;
-        case 'Pin_Login':
+        case 'PinLogin':
             if (isset($_POST["pin"])) {
-                $value = login_pin($_POST["pin"]);
+                $value = PinLogin($_POST["pin"]);
             } else {
                 $value = null;
             }
             break;
         case 'PunchIn':
             if (isset($_POST["employeeId"])) {
-                $value = PunchIn($_POST['employeeId'], $_POST['type'], $_POST['open_status']);
+                $value = PunchIn($_POST['employeeId']);
             } else {
                 $value = null;
             }
             break;
         case 'PunchOut':
-            if (isset($_POST["employeeId"])) {
-                $value = PunchOut($_POST['employeeId'], $_POST['type'], $_POST['open_status']);
+            if (isset($_POST["employeeId"]) && isset($_POST['currentJobId'])) {
+                $value = PunchOut($_POST['employeeId'], $_POST['currentJobId']);
             } else {
                 $value = null;
             }
@@ -223,15 +203,22 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_url)) {
                 $value = null;
             }
             break;
-            case 'JobPunch':
+        case 'JobPunch':
             if (isset($_POST['employeeId']) && isset($_POST['newJobId'])) {
                 $value = JobPunch($_POST['employeeId'], $_POST['newJobId']);
             } else {
                 $value = null;
             }
             break;
-        case 'RetrieveSettings':
-            $value = get_settings();
+        case 'PunchIntoJob':
+            if (isset($_POST['employeeId']) && isset($_POST['currentJobId']) && isset($_POST['newJobId'])) {
+                $value = PunchIntoJob($_POST['employeeId'], $_POST['currentJobId'], $_POST['newJobId']);
+            } else {
+                $value = null;
+            }
+            break;
+        case 'GetSettings':
+            $value = GetSettings();
             break;
         default:
             break;
