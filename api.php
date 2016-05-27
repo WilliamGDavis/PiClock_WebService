@@ -4,15 +4,16 @@ require_once './classes/DBConnect.php';
 require_once './classes/Employee.php';
 require_once './classes/Punch.php';
 require_once './classes/Authentication.php';
+require_once './classes/Settings.php';
 
 
 /*
  * Return the entire list of employees from the DB
  */
 
-function EmployeeList() {
+function GetEmployeeList() {
     try {
-        return Employee::EmployeeList();
+        return Employee::GetEmployeeList();
     } catch (Exception $ex) {
         return $ex->getMessage();
     }
@@ -42,6 +43,14 @@ function PunchIn($employeeId) {
 function PunchOut($employeeId, $currentJobId) {
     try {
         return Punch::PunchOut($employeeId, $currentJobId);
+    } catch (Exception $ex) {
+        return $ex->getMessage();
+    }
+}
+
+function GetTodaysPunchesByEmployeeId($employeeId){
+    try {
+        return Punch::GetTodaysPunchesByEmployeeId($employeeId);
     } catch (Exception $ex) {
         return $ex->getMessage();
     }
@@ -100,8 +109,8 @@ function PunchIntoJob($employeeId, $currentJobId, $newJobId){
     }
 }
 
-function get_settings() {
-    return Employee::GetSettings();
+function GetSettings() {
+    return Settings::GetSettings();
 }
 
 function get_current_job_by_employee_id($id) {
@@ -115,7 +124,7 @@ function get_current_job_by_employee_id($id) {
 }
 
 $possible_url = array(
-    "EmployeeList",
+    "GetEmployeeList",
     "PinLogin",
     "test_connection",
     "get_current_job_number",
@@ -123,12 +132,13 @@ $possible_url = array(
     "PunchIn",
     "PunchOut",
     "CheckLoginStatus",
-    "RetrieveSettings",
+    "GetSettings",
     "CheckCurrentJob",
     "ChangeJob",
     "JobLookup",
     "JobPunch",
-    "PunchIntoJob"
+    "PunchIntoJob",
+    "GetTodaysPunchesByEmployeeId"
 );
 $value = "An error has occured";
 
@@ -151,8 +161,8 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_url)) {
     switch ($_POST['action']) {
         case 'add_user':
             break;
-        case 'EmployeeList':
-            $value = EmployeeList();
+        case 'GetEmployeeList':
+            $value = GetEmployeeList();
             break;
         case 'PinLogin':
             if (isset($_POST["pin"])) {
@@ -219,6 +229,13 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_url)) {
             break;
         case 'GetSettings':
             $value = GetSettings();
+            break;
+        case "GetTodaysPunchesByEmployeeId":
+            if (isset($_POST['employeeId'])) {
+                $value = GetTodaysPunchesByEmployeeId($_POST['employeeId']);
+            } else {
+                $value = null;
+            }
             break;
         default:
             break;

@@ -9,27 +9,18 @@ require_once 'DBConnect.php';
  */
 class Employee {
 
-//    public static function GetAllEmployees() {
-//        return self::ReturnAllEmployees();
-//    }
-
-    public static function EmployeeList() {
+    public static function GetEmployeeList() {
         $db = new DBConnect();
         $db = $db->DBObject;
-        $all_employees_array = self::Query_EmployeeList($db);
+        $all_employees_array = self::Query_GetEmployeeList($db);
         $db = null;
         return $all_employees_array;
     }
 
-   
-
+    
     public static function ReturnCurrentJobByEmployeeId($id) {
         return self::Get_Current_Job_By_Employee_Id($id);
     }
-
-    
-
-    
 
     public static function CheckLoginStatus($employeeId) {
         return self::CheckForLoginStatus($employeeId);
@@ -39,9 +30,7 @@ class Employee {
         return self::CheckForCurrentJob($employeeId);
     }
 
-    public static function GetSettings() {
-        return self::ReturnAllSettings();
-    }
+    
 
     public static function ChangeJob($employeeId, $jobId, $newJobId) {
         return self::ChangeJobInDb($employeeId, $jobId, $newJobId);
@@ -61,7 +50,7 @@ class Employee {
      * @param: $db: MySql database object
      */
 
-    private static function Query_EmployeeList($db) {
+    private static function Query_GetEmployeeList($db) {
         $employee_array = [];
         $query = "SELECT * "
                 . "FROM `users` "
@@ -80,25 +69,7 @@ class Employee {
         return $employee_array;
     }
 
-    private static function ReturnAllSettings() {
-        $db = new DBConnect();
-        $db = $db->DBObject;
-
-        $query = "SELECT id, name, value "
-                . "FROM settings";
-        $stmt = $db->prepare($query);
-        $stmt->execute();
-
-        $settings_array = [];
-        while ($row = $stmt->fetchObject()) {
-            array_push($settings_array, array(
-                'id' => $row->id,
-                'name' => $row->name,
-                'value' => $row->value
-            ));
-        }
-        return $settings_array;
-    }
+    
 
 
 
