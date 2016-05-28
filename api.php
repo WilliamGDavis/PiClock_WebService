@@ -48,7 +48,7 @@ function PunchOut($employeeId, $currentJobId) {
     }
 }
 
-function GetTodaysPunchesByEmployeeId($employeeId){
+function GetTodaysPunchesByEmployeeId($employeeId) {
     try {
         return Punch::GetTodaysPunchesByEmployeeId($employeeId);
     } catch (Exception $ex) {
@@ -101,9 +101,17 @@ function JobPunch($employeeId, $newJobId) {
     }
 }
 
-function PunchIntoJob($employeeId, $currentJobId, $newJobId){
-    try{
+function PunchIntoJob($employeeId, $currentJobId, $newJobId) {
+    try {
         return Punch::PunchIntoJob($employeeId, $currentJobId, $newJobId);
+    } catch (Exception $ex) {
+        return $ex->getMessage();
+    }
+}
+
+function GetThisWeeksPunchesByEmployeeId($employeeId) {
+    try {
+        return Punch::GetThisWeeksPunchesByEmployeeId($employeeId);
     } catch (Exception $ex) {
         return $ex->getMessage();
     }
@@ -138,7 +146,8 @@ $possible_url = array(
     "JobLookup",
     "JobPunch",
     "PunchIntoJob",
-    "GetTodaysPunchesByEmployeeId"
+    "GetTodaysPunchesByEmployeeId",
+    "GetThisWeeksPunchesByEmployeeId"
 );
 $value = "An error has occured";
 
@@ -233,6 +242,13 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_url)) {
         case "GetTodaysPunchesByEmployeeId":
             if (isset($_POST['employeeId'])) {
                 $value = GetTodaysPunchesByEmployeeId($_POST['employeeId']);
+            } else {
+                $value = null;
+            }
+            break;
+        case "GetThisWeeksPunchesByEmployeeId":
+            if (isset($_POST['employeeId'])) {
+                $value = GetThisWeeksPunchesByEmployeeId($_POST['employeeId']);
             } else {
                 $value = null;
             }
