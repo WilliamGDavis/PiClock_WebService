@@ -17,7 +17,6 @@ class Employee {
         return $all_employees_array;
     }
 
-    
     public static function ReturnCurrentJobByEmployeeId($id) {
         return self::Get_Current_Job_By_Employee_Id($id);
     }
@@ -29,8 +28,6 @@ class Employee {
     public static function CheckCurrentJob($employeeId) {
         return self::CheckForCurrentJob($employeeId);
     }
-
-    
 
     public static function ChangeJob($employeeId, $jobId, $newJobId) {
         return self::ChangeJobInDb($employeeId, $jobId, $newJobId);
@@ -69,22 +66,15 @@ class Employee {
         return $employee_array;
     }
 
-    
-
-
-
 //TODO: Create a function to check for an "open" punch to marry a PunchIn to a PunchOut
-    
-
-    
 
     private static function ChangeJobInDb($employeeId, $jobId, $newJobId) {
         try {
             $db = new DBConnect();
             $db = $db->DBObject;
             $jobPunch = [];
-//TODO: Use a transaction
-//Find the Parent Punch for Open Job Punch for the user
+            //TODO: Use a transaction
+            //Find the Parent Punch for Open Job Punch for the user
             $query = "SELECT id, id_punches_jobs "
                     . "FROM punches_jobs_open "
                     . "WHERE id_users = :id_users "
@@ -99,7 +89,7 @@ class Employee {
                 $jobPunch['id_punches_jobs'] = $row->id_punches_jobs;
             }
 
-//Delete the currently open punch
+            //Delete the currently open punch
             $query = "DELETE FROM punches_jobs_open "
                     . "WHERE id = :id "
                     . "LIMIT 1";
@@ -108,7 +98,7 @@ class Employee {
                 ':id' => $jobPunch['id']
             ));
 
-//"Close" out the original parent job punch
+            //"Close" out the original parent job punch
             $query = "UPDATE punches_jobs "
                     . "SET open_status = :open_status "
                     . "WHERE id = :id_punches_jobs "
@@ -120,8 +110,8 @@ class Employee {
             ));
 
 //Add a PunchOut to the Database
-            $query = "INSERT INTO punches_jobs (id, id_jobs, id_parent_punch_jobs, id_users, type, open_status)"
-                    . "VALUES (:id, :id_jobs, :id_parent_punch_jobs, :id_users, :type, :open_status)";
+            $query = "INSERT INTO punches_jobs (id, id_jobs, id_parent_punch_jobs, id_users, datetime, type, open_status)"
+                    . "VALUES (:id, :id_jobs, :id_parent_punch_jobs, :id_users, NOW(), :type, :open_status)";
             $stmt = $db->prepare($query);
             $stmt->execute(array(
                 ":id" => null,
@@ -133,8 +123,8 @@ class Employee {
             ));
 
 //Add the new punch to the Database
-            $query = "INSERT INTO punches_jobs (id, id_jobs, id_parent_punch_jobs, id_users, type, open_status)"
-                    . "VALUES (:id, :id_jobs, :id_parent_punch_jobs, :id_users, :type, :open_status)";
+            $query = "INSERT INTO punches_jobs (id, id_jobs, id_parent_punch_jobs, id_users, datetime, type, open_status)"
+                    . "VALUES (:id, :id_jobs, :id_parent_punch_jobs, :id_users, NOW(), :type, :open_status)";
             $stmt = $db->prepare($query);
             $stmt->execute(array(
                 ":id" => null,
@@ -239,14 +229,9 @@ class Employee {
                 . "WHERE id_users = :id "
                 . "AND type = 1 "
                 . "AND open_status = 1 "
-                . "ORDER BY timestamp DESC "
+                . "ORDER BY datetime DESC "
                 . "LIMIT 1";
-//        $query = "SELECT * "
-//                . "FROM `punches_open` "
-//                . "WHERE id_users = :id "
-//                . "AND type = 1 "
-//                . "ORDER BY timestamp ASC "
-//                . "LIMIT 1";
+        
         $stmt = $db->prepare($query);
         $stmt->execute(array(
             ":id" => $id
@@ -257,7 +242,7 @@ class Employee {
             $punch['id'] = $row->id;
             $punch['id_users'] = $row->id_users;
             $punch['id_jobs'] = self::ConvertJobIdToJobNumber($row->id_jobs);
-            $punch['timestamp'] = $row->timestamp;
+            $punch['datetime'] = $row->datetime;
             $punch['type'] = $row->type;
         }
         return $punch;
@@ -267,7 +252,6 @@ class Employee {
         $db = new DBConnect();
         $db = $db->DBObject;
 
-//Actual Query
         $query = "SELECT description "
                 . "FROM `jobs` "
                 . "WHERE id = :id "
@@ -289,7 +273,6 @@ class Employee {
         $db = $db->DBObject;
         $jobNumber = null;
 
-//Actual Query
         $query = "SELECT id "
                 . "FROM `jobs` "
                 . "WHERE description = :jobDescription "
@@ -311,9 +294,9 @@ class Employee {
             $db = new DBConnect();
             $db = $db->DBObject;
 
-//Add the new punch to the Database
-            $query = "INSERT INTO punches_jobs (id, id_jobs, id_parent_punch_jobs, id_users, type, open_status)"
-                    . "VALUES (:id, :id_jobs, :id_parent_punch_jobs, :id_users, :type, :open_status)";
+            //Add the new punch to the Database
+            $query = "INSERT INTO punches_jobs (id, id_jobs, id_parent_punch_jobs, id_users, datetime, type, open_status)"
+                    . "VALUES (:id, :id_jobs, :id_parent_punch_jobs, :id_users, NOW(), :type, :open_status)";
             $stmt = $db->prepare($query);
             $stmt->execute(array(
                 ":id" => null,
@@ -325,7 +308,7 @@ class Employee {
             ));
             $last_insert_id = $db->lastInsertId();
 
-//Create an "Open" punch for the user
+            //Create an "Open" punch for the user
             $query = "INSERT INTO punches_jobs_open (id, id_punches_jobs, id_users)"
                     . "VALUES (:id, :id_punches_jobs, :id_users)";
             $stmt = $db->prepare($query);

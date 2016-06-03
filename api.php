@@ -48,9 +48,9 @@ function PunchOut($employeeId, $currentJobId) {
     }
 }
 
-function GetTodaysPunchesByEmployeeId($employeeId) {
+function GetSingleDayPunchesByEmployeeId($employeeId) {
     try {
-        return Punch::GetTodaysPunchesByEmployeeId($employeeId);
+        return Punch::GetSingleDayPunchesByEmployeeId($employeeId);
     } catch (Exception $ex) {
         return $ex->getMessage();
     }
@@ -146,7 +146,7 @@ $possible_url = array(
     "JobLookup",
     "JobPunch",
     "PunchIntoJob",
-    "GetTodaysPunchesByEmployeeId",
+    "GetSingleDayPunchesByEmployeeId",
     "GetThisWeeksPunchesByEmployeeId"
 );
 $value = "An error has occured";
@@ -239,9 +239,9 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_url)) {
         case 'GetSettings':
             $value = GetSettings();
             break;
-        case "GetTodaysPunchesByEmployeeId":
+        case "GetSingleDayPunchesByEmployeeId":
             if (isset($_POST['employeeId'])) {
-                $value = GetTodaysPunchesByEmployeeId($_POST['employeeId']);
+                $value = GetSingleDayPunchesByEmployeeId($_POST['employeeId']);
             } else {
                 $value = null;
             }
