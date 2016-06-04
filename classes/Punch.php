@@ -470,7 +470,7 @@ class Punch {
     //Calculate by duration of the punches for each dat as opposed to first punch and last punch, just in case someone punches out for a period of time
     //TODO: Make this work
     private static function Query_GetThisWeeksPunchesByEmployeeId($db, $employeeId) {
-        $thisWeeksPunches = [];
+        $thisWeeksPunches['DayOfWeekPunch'] = [];
         $regularPunchesOpen = [];
         $jobPunchesOpen = [];
         $regularPunchesPaired = array(
@@ -533,7 +533,7 @@ class Punch {
 
         while ($row = $stmt->fetchObject()) {
             $date = date('Y-m-d', strtotime($row->Date));
-            array_push($thisWeeksPunches, array(
+            array_push($thisWeeksPunches['DayOfWeekPunch'], array(
                 'Date' => $date,
                 'DayName' => $row->DayName,
                 'RegularPunchesPaired' => array(

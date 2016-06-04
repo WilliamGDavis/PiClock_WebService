@@ -7,6 +7,7 @@ class DBConnect {
     private $db_name;
     private $db_username;
     private $db_password;
+    private $timezone;
     public $DBObject;
 
     public function __construct() {
@@ -16,8 +17,9 @@ class DBConnect {
         $this->db_name = getenv('DB_NAME');
         $this->db_username = getenv('DB_USERNAME');
         $this->db_password = getenv('DB_PASSWORD');
-
+        $this->timezone = 'America/Detroit';
         try {
+            date_default_timezone_set($this->timezone);
             $this->TryConnect();
         } catch (Exception $ex) {
             return $ex->getMessage();
