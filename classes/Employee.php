@@ -33,8 +33,24 @@ class Employee {
         return self::ChangeJobInDb($employeeId, $jobId, $newJobId);
     }
 
-    public static function JobLookup($jobDescription) {
-        return self::JobLookupFromDb($jobDescription);
+    public static function GetJobIdByJobDescription($jobDescription) {
+        $db = new DBConnect();
+        $db = $db->DBObject;
+        $jobId = self::Query_GetJobIdByJobDescription($db, $jobDescription);
+        $db = null;
+        return $jobId;
+    }
+    private static function Query_GetJobIdByJobDescription($db, $jobDescription) {
+        $query = "SELECT jobs.id 
+                  FROM jobs 
+                  WHERE jobs.description = :jobDescription 
+                  LIMIT 1";
+        $stmt = $db->prepare($query);
+        $stmt->execute(array(
+            ":jobDescription" => $jobDescription
+        ));
+        
+        return $stmt->fetchColumn();
     }
 
     public static function JobPunch($employeeId, $newJobId) {
@@ -109,7 +125,7 @@ class Employee {
                 ":id_punches_jobs" => $jobPunch['id_punches_jobs']
             ));
 
-//Add a PunchOut to the Database
+            //Add a PunchOut to the Database
             $query = "INSERT INTO punches_jobs (id, id_jobs, id_parent_punch_jobs, id_users, datetime, type, open_status)"
                     . "VALUES (:id, :id_jobs, :id_parent_punch_jobs, :id_users, NOW(), :type, :open_status)";
             $stmt = $db->prepare($query);
@@ -122,7 +138,8 @@ class Employee {
                 ":open_status" => 0
             ));
 
-//Add the new punch to the Database
+            //This is where it seems to break on the ARM MySql server
+            //Add the new punch to the Database
             $query = "INSERT INTO punches_jobs (id, id_jobs, id_parent_punch_jobs, id_users, datetime, type, open_status)"
                     . "VALUES (:id, :id_jobs, :id_parent_punch_jobs, :id_users, NOW(), :type, :open_status)";
             $stmt = $db->prepare($query);
@@ -134,7 +151,7 @@ class Employee {
                 ":type" => 1,
                 ":open_status" => 1
             ));
-            $last_insert_id = $db->lastInsertId();
+            $last_insert_id = $db->lastInsertId(); //TODO: This is likely where the bug with the job id not being passed into the db properly
 
             //Create an "Open" punch for the user
             $query = "INSERT INTO punches_jobs_open (id, id_punches_jobs, id_users)"
@@ -178,7 +195,7 @@ class Employee {
         $db = $db->DBObject;
         $currentJobArray = [];
 
-//Counting Query
+        //Counting Query
         $query = "SELECT COUNT(*) "
                 . "FROM `punches_jobs_open` "
                 . "WHERE id_users = :id_users";
@@ -188,8 +205,8 @@ class Employee {
         ));
 
         $count = $stmt->fetchColumn();
-
-        if (1 <= $count) {
+        
+        if ($count >= 1) {
             $query = "SELECT jobs.id,
                              jobs.description,
                              jobs.code,
@@ -212,7 +229,7 @@ class Employee {
                 $currentJobArray["code"] = $row->code;
                 $currentJobArray["active"] = $row->active;
             }
-
+            
             return $currentJobArray;
         } else {
             return null;
@@ -268,26 +285,7 @@ class Employee {
         return $punch;
     }
 
-    private static function JobLookupFromDb($jobDescription) {
-        $db = new DBConnect();
-        $db = $db->DBObject;
-        $jobNumber = null;
-
-        $query = "SELECT id "
-                . "FROM `jobs` "
-                . "WHERE description = :jobDescription "
-                . "LIMIT 1";
-        $stmt = $db->prepare($query);
-        $stmt->execute(array(
-            ":jobDescription" => $jobDescription
-        ));
-
-        while ($row = $stmt->fetchObject()) {
-            $jobNumber = $row->id;
-        }
-
-        return $jobNumber;
-    }
+    
 
     private static function JobPunchToDb($employeeId, $newJobId) {
         try {
@@ -322,4 +320,8 @@ class Employee {
         }
     }
 
+    private function displayPage($array){
+        header('Location: index.php?' . http_build_query($array));
+        exit();
+    }
 }

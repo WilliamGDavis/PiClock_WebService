@@ -284,14 +284,14 @@ class Punch {
         //2016-06-02
 
         $regularPunchesPaired = self::Query_GetRegularPunchesPairedByEmployeeId($db, $employeeId, $regularPunchesPaired, $date);
-        $regularPunchesOpen = self::Query_GetRegularPunchesOpenByEmployeeId($db, $employeeId, $regularPunchesOpen);
+        $regularPunchesOpen = self::Query_GetRegularPunchesOpenByEmployeeId($db, $employeeId, $regularPunchesOpen, $date);
         $jobPunchesPaired = self::Query_GetJobPunchesPairedByEmployeeId($db, $employeeId, $jobPunchesPaired, $date);
         $jobPunchesOpen = self::Query_GetJobPunchesOpenByEmployeeId($db, $employeeId, $jobPunchesOpen);
 
-        $singleDayPunches["RegularPunchesPaired"] = $regularPunchesPaired;
-        $singleDayPunches["JobPunchesPaired"] = $jobPunchesPaired;
         $singleDayPunches["RegularPunchesOpen"] = $regularPunchesOpen;
         $singleDayPunches["JobPunchesOpen"] = $jobPunchesOpen;
+        $singleDayPunches["RegularPunchesPaired"] = $regularPunchesPaired;
+        $singleDayPunches["JobPunchesPaired"] = $jobPunchesPaired;
         return $singleDayPunches;
     }
 
@@ -415,8 +415,6 @@ class Punch {
                 'PunchIn' => strval($row->PunchIn),
                 'PunchOut' => strval($row->PunchOut),
                 'DurationInSeconds' => strval($row->DurationInSeconds),
-//                'JobId' => strval($row->JobId),
-//                'JobDescription' => strval($row->JobDescription)
                 'JobInformation' => array(
                     'Id' => strval($row->JobId),
                     'Description' => strval($row->JobDescription)
@@ -457,8 +455,6 @@ class Punch {
             $jobPunchesOpen['OpenId'] = strval($row->OpenId);
             $jobPunchesOpen['ParentId'] = strval($row->ParentId);
             $jobPunchesOpen['PunchIn'] = strval($row->PunchIn);
-//                'JobId' => strval($row->JobId),
-//                'JobDescription' => strval($row->JobDescription)
             $jobPunchesOpen['JobInformation'] = array(
                 'Id' => strval($row->JobId),
                 'Description' => strval($row->JobDescription)
@@ -470,7 +466,7 @@ class Punch {
     //Calculate by duration of the punches for each dat as opposed to first punch and last punch, just in case someone punches out for a period of time
     //TODO: Make this work
     private static function Query_GetThisWeeksPunchesByEmployeeId($db, $employeeId) {
-        $thisWeeksPunches['DayOfWeekPunch'] = [];
+        $thisWeeksPunches['PairedPunches'] = [];
         $regularPunchesOpen = [];
         $jobPunchesOpen = [];
         $regularPunchesPaired = array(
@@ -531,24 +527,44 @@ class Punch {
             ':employeeId' => $employeeId
         ));
 
+        $pairedPunches = [];
         while ($row = $stmt->fetchObject()) {
             $date = date('Y-m-d', strtotime($row->Date));
-            array_push($thisWeeksPunches['DayOfWeekPunch'], array(
-                'Date' => $date,
-                'DayName' => $row->DayName,
-                'RegularPunchesPaired' => array(
-                    self::Query_GetRegularPunchesPairedByEmployeeId($db, $employeeId, $regularPunchesPaired, $date)
-                ),
-                'JobPunchesPaired' => array(
-                    self::Query_GetJobPunchesPairedByEmployeeId($db, $employeeId, $jobPunchesPaired, $date)
-                ),
-                'RegularPunchesOpen' => array(
-                    self::Query_GetRegularPunchesOpenByEmployeeId($db, $employeeId, $regularPunchesOpen)
-                ),
-                'JobPunchesOpen' => array(
-                    self::Query_GetJobPunchesOpenByEmployeeId($db, $employeeId, $jobPunchesOpen)
-                )
-            ));
+            $thisWeeksPunches['OpenPunches'] = array(
+                "RegularPunchesOpen" => self::Query_GetRegularPunchesOpenByEmployeeId($db, $employeeId, $regularPunchesOpen),
+                "JobPunchesOpen" => self::Query_GetJobPunchesOpenByEmployeeId($db, $employeeId, $jobPunchesOpen)
+            );
+//            $thisWeeksPunches['RegularPunchesOpen'] = self::Query_GetRegularPunchesOpenByEmployeeId($db, $employeeId, $regularPunchesOpen);
+//            $thisWeeksPunches['JobPunchesOpen'] = self::Query_GetJobPunchesOpenByEmployeeId($db, $employeeId, $jobPunchesOpen);
+            array_push($pairedPunches,
+            array(
+            'Date' => $date,
+            'DayName' => $row->DayName,
+            'RegularPunchesPaired' => array(
+            self::Query_GetRegularPunchesPairedByEmployeeId($db, $employeeId, $regularPunchesPaired, $date)
+            ),
+            'JobPunchesPaired' => array(
+            self::Query_GetJobPunchesPairedByEmployeeId($db, $employeeId, $jobPunchesPaired, $date)
+            )
+            )
+            );
+            $thisWeeksPunches['PairedPunches'] = $pairedPunches;
+//            array_push($thisWeeksPunches['DayOfWeekPunch'], array(
+//                'Date' => $date,
+//                'DayName' => $row->DayName,
+//                'RegularPunchesPaired' => array(
+//                    self::Query_GetRegularPunchesPairedByEmployeeId($db, $employeeId, $regularPunchesPaired, $date)
+//                ),
+//                'JobPunchesPaired' => array(
+//                    self::Query_GetJobPunchesPairedByEmployeeId($db, $employeeId, $jobPunchesPaired, $date)
+//                ),
+////                'RegularPunchesOpen' => array(
+////                    self::Query_GetRegularPunchesOpenByEmployeeId($db, $employeeId, $regularPunchesOpen)
+////                ),
+////                'JobPunchesOpen' => array(
+////                    self::Query_GetJobPunchesOpenByEmployeeId($db, $employeeId, $jobPunchesOpen)
+////                )
+//            ));
         }
         return $thisWeeksPunches;
     }

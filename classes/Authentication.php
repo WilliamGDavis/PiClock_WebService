@@ -18,17 +18,30 @@ class Authentication {
      public static function PinLogin($pin) {
         $db = new DBConnect();
         $db = $db->DBObject;
-        $employee_array = self::Query_PinLogin($db, $pin);
+        $employee = self::Query_PinLogin($db, $pin);
         $db = null;
-        return $employee_array;
+        return $employee;
     }
     
+    /**
+     * Return an employee from the database based on their PIN
+     * 
+     * @param   object $db
+     * @param   string $pin
+     * @return  array (Single Employee|Empty array)      
+     */
     private static function Query_PinLogin($db, $pin) {
         $employee = [];
-        $query = "SELECT id, fname, mname, lname "
-                . "FROM users "
-                . "WHERE PIN = :pin "
-                . "LIMIT 1";
+        $query = "SELECT 
+                    users.id, 
+                    users.fname, 
+                    users.mname, 
+                    users.lname
+                  FROM 
+                    users
+                  WHERE 
+                    users.PIN = :pin
+                  LIMIT 1";
         $stmt = $db->prepare($query);
         $stmt->execute(array(
             ":pin" => $pin
