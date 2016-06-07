@@ -39,6 +39,12 @@ class Punch {
         return $punchResult;
     }
 
+
+    /**
+     * Helper function for Query_GetSingleDayPunchesByEmployeeId
+     * @param string $employeeId
+     * @return array
+     */
     public static function GetSingleDayPunchesByEmployeeId($employeeId) {
         $db = new DBConnect();
         $db = $db->DBObject;

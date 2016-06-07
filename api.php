@@ -3,76 +3,17 @@
 require_once './classes/DBConnect.php';
 require_once './classes/Employee.php';
 require_once './classes/Punch.php';
-//require_once './classes/Authentication.php';
 require_once './classes/Settings.php';
 require_once './classes/ApiMethods.php';
 
 //Basic HTTP Authentication
-//TODO: Ensure the RPC calls are passed over SSL
-if (false === basicAuthenticationOverSsl()) {
-    exit();
+$auth = new Authentication_Api();
+if (false === $auth->TryHttpBasicAuthentication()) {
+    exit(json_encode("An error has occured"));
 }
 
 //Decode the POST array to a JSON object
 $postData = json_decode(file_get_contents('php://input'));
-
-
-/*
- * Return the entire list of employees from the DB
- */
-
-function GetEmployeeList() {
-    try {
-        return Employee::GetEmployeeList();
-    } catch (Exception $ex) {
-        return $ex->getMessage();
-    }
-}
-
-function GetSingleDayPunchesByEmployeeId($employeeId) {
-    try {
-        return Punch::GetSingleDayPunchesByEmployeeId($employeeId);
-    } catch (Exception $ex) {
-        return $ex->getMessage();
-    }
-}
-
-function CheckLoginStatus($employeeId) {
-    try {
-        return Employee::CheckLoginStatus($employeeId);
-    } catch (Exception $ex) {
-        return $ex->getMessage();
-    }
-}
-
-function test_connection() {
-    $ConnectionStatus = new DBConnect();
-    return $ConnectionStatus->CheckConnection();
-}
-
-function CheckCurrentJob($employeeId) {
-    try {
-        return Employee::CheckCurrentJob($employeeId);
-    } catch (Exception $ex) {
-        return $ex->getMessage();
-    }
-}
-
-function ChangeJob($employeeId, $jobId, $newJobId) {
-    try {
-        return Employee::ChangeJob($employeeId, $jobId, $newJobId);
-    } catch (Exception $ex) {
-        return $ex->getMessage();
-    }
-}
-
-function GetJobIdByJobDescription($jobDescription) {
-    try {
-        return Employee::GetJobIdByJobDescription($jobDescription);
-    } catch (Exception $ex) {
-        return $ex->getMessage();
-    }
-}
 
 function JobPunch($employeeId, $newJobId) {
     try {
@@ -112,24 +53,6 @@ function get_current_job_by_employee_id($id) {
     }
 }
 
-/**
- * Authenticate an application using Basic Authentication
- * TODO: Tighten up the security
- * @return bool
- */
-function basicAuthenticationOverSsl() {
-    if (!isset($_SERVER['PHP_AUTH_USER']) || !isset($_SERVER['PHP_AUTH_PW'])) {
-        return false;
-    }
-
-    $username = filter_var($_SERVER['PHP_AUTH_USER']);
-    $password = filter_var($_SERVER['PHP_AUTH_PW']);
-
-    if ('user' != $username || 'pass' != $password) {
-        return false;
-    }
-}
-
 $possible_actions = array(
     "GetEmployeeList",
     "PinLogin",
@@ -140,7 +63,7 @@ $possible_actions = array(
     "PunchOut",
     "CheckLoginStatus",
     "GetSettings",
-    "CheckCurrentJob",
+    "GetCurrentJob",
     "ChangeJob",
     "GetJobIdByJobDescription",
     "JobPunch",
@@ -155,27 +78,32 @@ $value = "An error has occured";
 
 if (isset($_GET["action"]) && in_array($_GET["action"], $possible_actions)) {
     switch ($_GET["action"]) {
-        case "test_connection":
-            $value = test_connection();
-            break;
-        case "get_current_job_number":
-            if (isset($_GET["id"])) {
-                $value = get_current_job_by_employee_id($_GET["id"]);
-            } else {
-                $value = "Missing Argument";
-            }
-            break;
         default:
             break;
     }
 } elseif (isset($postData->action) && in_array($postData->action, $possible_actions)) {
     switch ($postData->action) {
+        /**
+         * Check for a valid connection to the database
+         * @return string true or false
+         */
         case "test_connection":
-            $value = test_connection();
+            $value = ApiMethods_Database::TestDBConnection();
             break;
+        /**
+         * Return a list of all employees from the database
+         * @return array
+         * @return string $ex->message
+         */
         case 'GetEmployeeList':
-            $value = GetEmployeeList();
+            $value = ApiMethods_Employee::GetEmployeeList();
             break;
+        /**
+         * Return a user from the database based on a PIN
+         * @param string $pin
+         * @return array
+         * @return string $ex->message
+         */
         case 'PinLogin':
             $pin = (isset($postData->pin)) ? $postData->pin : null;
             if (null !== $pin) {
@@ -195,32 +123,53 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_actions)) {
                 $value = ApiMethods_Punch::PunchOut($employeeId, $currentJobId);
             }
             break;
+        /**
+         * Check to see if a user is currently punched into the system
+         * @param string $employeeId
+         * @return bool
+         */
         case 'CheckLoginStatus':
             $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
             if (null !== $employeeId) {
-                $value = CheckLoginStatus($employeeId);
+                $value = ApiMethods_Employee::CheckLoginStatus($employeeId);
             }
             break;
-        case 'CheckCurrentJob':
+        /**
+         * Returns the current job an employee is punched into
+         * @param string $employeeId
+         * @return array job information
+         * @return string $ex->message
+         */
+        case 'GetCurrentJob':
             $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
             if (null !== $employeeId) {
-                $value = CheckCurrentJob($employeeId);
+                $value = ApiMethods_Employee::GetCurrentJob($employeeId);
             }
             break;
+        /**
+         * Change the job an employee is punched into
+         * @param string $employeeId
+         * @param string $jobId
+         * @param string $newJobId
+         */
         case 'ChangeJob':
             $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
             $jobId = (isset($postData->jobId)) ? $postData->jobId : null;
             $newJobId = (isset($postData->newJobId)) ? $postData->newJobId : null;
             if (null !== $employeeId && null !== $jobId && null !== $newJobId) {
-                $value = ChangeJob($employeeId, $jobId, $newJobId);
+                $value = ApiMethods_Job::ChangeJob($employeeId, $jobId, $newJobId);
             }
             break;
+        /**
+         * Return the Job Id from the database, based on the Job Description
+         * @param string $jobDescription
+         * @return Int
+         * TODO: Should this be returning an INT???
+         */
         case 'GetJobIdByJobDescription':
             $jobDescription = (isset($postData->jobDescription)) ? $postData->jobDescription : null;
             if (null !== $jobDescription) {
-                $value = (int) GetJobIdByJobDescription($jobDescription);
-            } else {
-                $value = "";
+                $value = (int) ApiMethods_Job::GetJobIdByJobDescription($jobDescription);
             }
             break;
         case 'JobPunch':
@@ -241,10 +190,16 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_actions)) {
         case 'GetSettings':
             $value = GetSettings();
             break;
+        /**
+         * Return an array of an employee's punches for the day
+         * @param string $employeeId
+         * @return array
+         * @return string $ex->message
+         */
         case "GetSingleDayPunchesByEmployeeId":
             $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
             if (null !== $employeeId) {
-                $value = GetSingleDayPunchesByEmployeeId($employeeId);
+                $value = ApiMethods_Punch::GetSingleDayPunchesByEmployeeId($employeeId);
             }
             break;
         case "GetThisWeeksPunchesByEmployeeId":
@@ -257,7 +212,7 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_actions)) {
             break;
     }
 } elseif ($_SERVER['REQUEST_METHOD'] == 'PUT') {
-
+    
 }
 
 //return JSON string

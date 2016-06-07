@@ -58,10 +58,10 @@ class DBConnect {
         //If not, stop processing all scripts and return a generalized message
         try {
             $this->DBObject = new PDO($dsn, $this->db_username, $this->db_password); //Connect to DB
-            die("true");
+            return "true";
         } catch (PDOException $e) {
             $this->DBObject = null;
-            die("false");
+            return "false";
         }
     }
 
