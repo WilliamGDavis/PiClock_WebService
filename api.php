@@ -7,7 +7,12 @@ require_once './classes/Punch.php';
 require_once './classes/Settings.php';
 require_once './classes/ApiMethods.php';
 
-//Todo: Use PHP basic authentication over SSL
+//Basic HTTP Authentication
+//TODO: Ensure the RPC calls are passed over SSL
+if (false === basicAuthenticationOverSsl()) {
+    exit();
+}
+
 //Decode the POST array to a JSON object
 $postData = json_decode(file_get_contents('php://input'));
 
@@ -107,6 +112,24 @@ function get_current_job_by_employee_id($id) {
     }
 }
 
+/**
+ * Authenticate an application using Basic Authentication
+ * TODO: Tighten up the security
+ * @return bool
+ */
+function basicAuthenticationOverSsl() {
+    if (!isset($_SERVER['PHP_AUTH_USER']) || !isset($_SERVER['PHP_AUTH_PW'])) {
+        return false;
+    }
+
+    $username = filter_var($_SERVER['PHP_AUTH_USER']);
+    $password = filter_var($_SERVER['PHP_AUTH_PW']);
+
+    if ('user' != $username || 'pass' != $password) {
+        return false;
+    }
+}
+
 $possible_actions = array(
     "GetEmployeeList",
     "PinLogin",
@@ -145,52 +168,55 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_actions)) {
         default:
             break;
     }
-} elseif (isset($postData->{'action'}) && in_array($postData->{'action'}, $possible_actions)) {
-    switch ($postData->{'action'}) {
+} elseif (isset($postData->action) && in_array($postData->action, $possible_actions)) {
+    switch ($postData->action) {
+        case "test_connection":
+            $value = test_connection();
+            break;
         case 'GetEmployeeList':
             $value = GetEmployeeList();
             break;
         case 'PinLogin':
-            $pin = (isset($postData->{'pin'})) ? $postData->{'pin'} : null;
+            $pin = (isset($postData->pin)) ? $postData->pin : null;
             if (null !== $pin) {
                 $value = ApiMethods_Authentication::PinLogin($pin);
             }
             break;
         case 'PunchIn':
-            $employeeId = (isset($postData->{'employeeId'})) ? $postData->{'employeeId'} : null;
+            $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
             if (null !== $employeeId) {
                 $value = ApiMethods_Punch::PunchIn($employeeId);
             }
             break;
         case 'PunchOut':
-            $employeeId = (isset($postData->{'employeeId'})) ? $postData->{'employeeId'} : null;
-            $currentJobId = (isset($postData->{'currentJobId'})) ? $postData->{'currentJobId'} : null;
+            $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
+            $currentJobId = (isset($postData->currentJobId)) ? $postData->currentJobId : null;
             if (null !== $employeeId && null !== $currentJobId) {
                 $value = ApiMethods_Punch::PunchOut($employeeId, $currentJobId);
             }
             break;
         case 'CheckLoginStatus':
-            $employeeId = (isset($postData->{'employeeId'})) ? $postData->{'employeeId'} : null;
+            $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
             if (null !== $employeeId) {
                 $value = CheckLoginStatus($employeeId);
             }
             break;
         case 'CheckCurrentJob':
-            $employeeId = (isset($postData->{'employeeId'})) ? $postData->{'employeeId'} : null;
+            $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
             if (null !== $employeeId) {
                 $value = CheckCurrentJob($employeeId);
             }
             break;
         case 'ChangeJob':
-            $employeeId = (isset($postData->{'employeeId'})) ? $postData->{'employeeId'} : null;
-            $jobId = (isset($postData->{'jobId'})) ? $postData->{'jobId'} : null;
-            $newJobId = (isset($postData->{'newJobId'})) ? $postData->{'newJobId'} : null;
+            $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
+            $jobId = (isset($postData->jobId)) ? $postData->jobId : null;
+            $newJobId = (isset($postData->newJobId)) ? $postData->newJobId : null;
             if (null !== $employeeId && null !== $jobId && null !== $newJobId) {
                 $value = ChangeJob($employeeId, $jobId, $newJobId);
             }
             break;
         case 'GetJobIdByJobDescription':
-            $jobDescription = (isset($postData->{'jobDescription'})) ? $postData->{'jobDescription'} : null;
+            $jobDescription = (isset($postData->jobDescription)) ? $postData->jobDescription : null;
             if (null !== $jobDescription) {
                 $value = (int) GetJobIdByJobDescription($jobDescription);
             } else {
@@ -198,16 +224,16 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_actions)) {
             }
             break;
         case 'JobPunch':
-            $employeeId = (isset($postData->{'employeeId'})) ? $postData->{'employeeId'} : null;
-            $newJobId = (isset($postData->{'newJobId'})) ? $postData->{'newJobId'} : null;
+            $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
+            $newJobId = (isset($postData->newJobId)) ? $postData->newJobId : null;
             if (null !== $employeeId && null !== $newJobId) {
                 $value = JobPunch($employeeId, $newJobId);
             }
             break;
         case 'PunchIntoJob':
-            $employeeId = (isset($postData->{'employeeId'})) ? $postData->{'employeeId'} : null;
-            $currentJobId = (isset($postData->{'currentJobId'})) ? $postData->{'currentJobId'} : null;
-            $newJobId = (isset($postData->{'newJobId'})) ? $postData->{'newJobId'} : null;
+            $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
+            $currentJobId = (isset($postData->currentJobId)) ? $postData->currentJobId : null;
+            $newJobId = (isset($postData->newJobId)) ? $postData->newJobId : null;
             if (null !== $employeeId && null !== $currentJobId && null !== $newJobId) {
                 $value = PunchIntoJob($employeeId, $currentJobId, $newJobId);
             }
@@ -216,13 +242,13 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_actions)) {
             $value = GetSettings();
             break;
         case "GetSingleDayPunchesByEmployeeId":
-            $employeeId = (isset($postData->{'employeeId'})) ? $postData->{'employeeId'} : null;
+            $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
             if (null !== $employeeId) {
                 $value = GetSingleDayPunchesByEmployeeId($employeeId);
             }
             break;
         case "GetThisWeeksPunchesByEmployeeId":
-            $employeeId = (isset($postData->{'employeeId'})) ? $postData->{'employeeId'} : null;
+            $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
             if (null !== $employeeId) {
                 $value = GetThisWeeksPunchesByEmployeeId($employeeId);
             }
