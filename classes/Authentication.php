@@ -46,9 +46,9 @@ class Authentication_Api {
 class Authentication {
 
     /**
-     * Helper function for Query_PinLogin
+     * Return the employee info based on the PIN
      * @param string $pin
-     * @return array $employee
+     * @return array
      */
     public static function PinLogin($pin) {
         $db = new DBConnect();
@@ -61,9 +61,9 @@ class Authentication {
     /**
      * Return an employee from the database based on their PIN
      * 
-     * @param   object $db
-     * @param   string $pin
-     * @return  array $employee or empty array      
+     * @param DBConnect $db
+     * @param string $pin
+     * @return array   
      */
     private static function Query_PinLogin($db, $pin) {
         $employee = [];

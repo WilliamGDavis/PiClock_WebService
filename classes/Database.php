@@ -2,8 +2,9 @@
 /**
  * Description of Database
  *
- * @author Owner
+ * @author William G Davis
  */
+require_once './classes/DBConnect.php';
 class Database {
     
     /**

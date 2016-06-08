@@ -1,26 +1,63 @@
 <?php
 
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 /**
  * Description of Punch
  *
- * @author Owner
+ * @author William G Davis
  */
 require_once './classes/DBConnect.php';
 
 class Punch {
 
+    /**
+     * Punch a user into the database (Regular Punch)
+     * @param string $employeeId
+     * @return bool true or false
+     * @return string $ex->message
+     * TODO: Get consistent returns
+     */
     public static function PunchIn($employeeId) {
         $db = new DBConnect();
         $db = $db->DBObject;
-        $punchResult = self::Query_PunchIn($db, $employeeId); //Should return TRUE or an error message
+        $punchResult = self::Query_PunchIn($db, $employeeId);
         $db = null;
         return $punchResult;
+    }
+
+    private static function Query_PunchIn($db, $employeeId) {
+        //Check to see if a user is currently punched in to the database
+        $currentlyLoggedIn = self::Query_CheckIfPunchedIn($db, $employeeId);
+        if (true === $currentlyLoggedIn) {
+            return false;
+        }
+        try {
+            $db->beginTransaction();
+            $query = "INSERT INTO punches (id, id_users, id_jobs, id_parentPunch, datetime, type, open_status)"
+                    . "VALUES (:id, :id_users, :id_jobs, :id_parentPunch, NOW(), :type, :open_status)";
+            $stmt = $db->prepare($query);
+            $stmt->execute(array(
+                ":id" => null,
+                ":id_users" => $employeeId,
+                ":id_jobs" => 0,
+                ":id_parentPunch" => 0,
+                ":type" => 1,
+                ":open_status" => 1
+            ));
+            $last_insert_id = $db->lastInsertId();
+            $query = "INSERT INTO punches_open (id, id_punches, id_users)"
+                    . "VALUES (:id, :id_punches, :id_users)";
+            $stmt = $db->prepare($query);
+            $stmt->execute(array(
+                ":id" => null,
+                ":id_punches" => $last_insert_id,
+                ":id_users" => $employeeId
+            ));
+            $db->commit();
+            return true;
+        } catch (Exception $ex) {
+            $db->rollback();
+            return $ex->getMessage();
+        }
     }
 
     public static function PunchOut($employeeId, $currentJobId) {
@@ -39,9 +76,9 @@ class Punch {
         return $punchResult;
     }
 
-
     /**
-     * Helper function for Query_GetSingleDayPunchesByEmployeeId
+     * Return an array of punches for the day based on employeeId
+     * @param DBConnect $db
      * @param string $employeeId
      * @return array
      */
@@ -53,57 +90,135 @@ class Punch {
         return $todaysPunches;
     }
 
+    private static function Query_GetSingleDayPunchesByEmployeeId($db, $employeeId) {
+        $singleDayPunches = [];
+        $regularPunchesOpen = [];
+        $jobPunchesOpen = [];
+        $regularPunchesPaired = array(
+            'TotalDurationInSeconds' => null,
+            'Punches' => []
+        );
+        $jobPunchesPaired = array(
+            'TotalDurationInSeconds' => null,
+            'Punches' => []
+        );
+
+        $date = date('Y-m-d', strtotime("today")); //TODO: Fix this to enable a user to pass in a date
+        //2016-06-02
+
+        $regularPunchesPaired = self::Query_GetRegularPunchesPairedByEmployeeId($db, $employeeId, $regularPunchesPaired, $date);
+        $regularPunchesOpen = self::Query_GetRegularPunchesOpenByEmployeeId($db, $employeeId, $regularPunchesOpen, $date);
+        $jobPunchesPaired = self::Query_GetJobPunchesPairedByEmployeeId($db, $employeeId, $jobPunchesPaired, $date);
+        $jobPunchesOpen = self::Query_GetJobPunchesOpenByEmployeeId($db, $employeeId, $jobPunchesOpen);
+
+        $singleDayPunches["RegularPunchesOpen"] = $regularPunchesOpen;
+        $singleDayPunches["JobPunchesOpen"] = $jobPunchesOpen;
+        $singleDayPunches["RegularPunchesPaired"] = $regularPunchesPaired;
+        $singleDayPunches["JobPunchesPaired"] = $jobPunchesPaired;
+        return $singleDayPunches;
+    }
+
+    /**
+     * Return an array of punches for the week based on employeeId
+     * @param DBConnect $db
+     * @param string $employeeId
+     * @return array
+     */
     public static function GetThisWeeksPunchesByEmployeeId($employeeId) {
         $db = new DBConnect();
         $db = $db->DBObject;
-        $todaysPunches = self::Query_GetThisWeeksPunchesByEmployeeId($db, $employeeId);
+        $weeklyPunches = self::Query_GetThisWeeksPunchesByEmployeeId($db, $employeeId);
         $db = null;
-        return $todaysPunches;
+        return $weeklyPunches;
     }
 
-    /*
-     * Function: Add a PunchIn stamp to the database
-     * It also adds a punch to the punches_open table in order to keep track of any open punches
-     *
-     */
+    private static function Query_GetThisWeeksPunchesByEmployeeId($db, $employeeId) {
+        $thisWeeksPunches['PairedPunches'] = [];
+        $regularPunchesOpen = [];
+        $jobPunchesOpen = [];
+        $regularPunchesPaired = array(
+            'TotalDurationInSeconds' => null,
+            'Punches' => []
+        );
+        $jobPunchesPaired = array(
+            'TotalDurationInSeconds' => null,
+            'Punches' => []
+        );
+
+        $query = "SELECT
+                    days.dayDesc AS DayName,
+                    days.date AS Date
+                  FROM(
+                        SELECT 
+                          'Monday' AS dayDesc, 0 AS dayOrder, STR_TO_DATE(CONCAT(YEAR(NOW()), WEEKOFYEAR(NOW()), ' ', 'Monday'), '%X%V %W') AS Date
+                        UNION SELECT
+                          'Tuesday', 1, STR_TO_DATE(CONCAT(YEAR(NOW()), WEEKOFYEAR(NOW()), ' ', 'Tuesday'), '%X%V %W')
+                        UNION SELECT
+                          'Wednesday', 2, STR_TO_DATE(CONCAT(YEAR(NOW()), WEEKOFYEAR(NOW()), ' ', 'Wednesday'), '%X%V %W')
+                        UNION SELECT
+                          'Thursday', 3, STR_TO_DATE(CONCAT(YEAR(NOW()), WEEKOFYEAR(NOW()), ' ', 'Thursday'), '%X%V %W')
+                        UNION SELECT
+                          'Friday', 4, STR_TO_DATE(CONCAT(YEAR(NOW()), WEEKOFYEAR(NOW()), ' ', 'Friday'), '%X%V %W')
+                        UNION SELECT
+                          'Saturday', 5, STR_TO_DATE(CONCAT(YEAR(NOW()), WEEKOFYEAR(NOW()), ' ', 'Saturday'), '%X%V %W')
+                        UNION SELECT
+                          'Sunday', 6, STR_TO_DATE(CONCAT(YEAR(NOW()), (WEEKOFYEAR(NOW()) + 1), ' ', 'Sunday'), '%X%V %W')
+                          ) AS days
+                    LEFT JOIN
+                      (
+                      SELECT SUM(UNIX_TIMESTAMP(punches.datetime) - UNIX_TIMESTAMP(parentPunches.datetime)) AS duration,
+                      parentPunches.datetime
+                      FROM
+                        (
+                          SELECT
+                            punches.id,
+                            punches.datetime AS DATETIME
+                          FROM
+                            punches
+                          WHERE
+                            punches.id_users = :employeeId 
+                            AND punches.id_parentPunch = 0 
+                            AND punches.open_status = 0 
+                            AND WEEKOFYEAR(punches.datetime) = WEEKOFYEAR(NOW())
+                        ) AS parentPunches
+                        LEFT JOIN punches 
+                        ON parentPunches.id = punches.id_parentPunch
+                        GROUP BY WEEKDAY(punches.datetime)
+                      ) AS punches 
+                    ON days.dayOrder = WEEKDAY(punches.datetime)
+                    ORDER BY
+                      days.dayOrder ASC";
+
+        $stmt = $db->prepare($query);
+        $stmt->execute(array(
+            ':employeeId' => $employeeId
+        ));
+
+        $pairedPunches = [];
+        while ($row = $stmt->fetchObject()) {
+            $date = date('Y-m-d', strtotime($row->Date));
+            $thisWeeksPunches['OpenPunches'] = array(
+                "RegularPunchesOpen" => self::Query_GetRegularPunchesOpenByEmployeeId($db, $employeeId, $regularPunchesOpen),
+                "JobPunchesOpen" => self::Query_GetJobPunchesOpenByEmployeeId($db, $employeeId, $jobPunchesOpen)
+            );
+            array_push($pairedPunches, array(
+                'Date' => $date,
+                'DayName' => $row->DayName,
+                'RegularPunchesPaired' => array(
+                    self::Query_GetRegularPunchesPairedByEmployeeId($db, $employeeId, $regularPunchesPaired, $date)
+                ),
+                'JobPunchesPaired' => array(
+                    self::Query_GetJobPunchesPairedByEmployeeId($db, $employeeId, $jobPunchesPaired, $date)
+                )
+                    )
+            );
+            $thisWeeksPunches['PairedPunches'] = $pairedPunches;
+        }
+        return $thisWeeksPunches;
+    }
 
     //Database Queries
-    private static function Query_PunchIn($db, $employeeId) {
-        //TODO: Check if a user is already punched in and return an error if ther are
-        $currentlyLoggedIn = self::Query_CheckIfPunchedIn($db, $employeeId);
-        if (true === $currentlyLoggedIn) {
-            return false;
-        } else {
-            try {
-                $db->beginTransaction();
-                $query = "INSERT INTO punches (id, id_users, id_jobs, id_parentPunch, datetime, type, open_status)"
-                        . "VALUES (:id, :id_users, :id_jobs, :id_parentPunch, NOW(), :type, :open_status)";
-                $stmt = $db->prepare($query);
-                $stmt->execute(array(
-                    ":id" => null,
-                    ":id_users" => $employeeId,
-                    ":id_jobs" => 0,
-                    ":id_parentPunch" => 0,
-                    ":type" => 1,
-                    ":open_status" => 1
-                ));
-                $last_insert_id = $db->lastInsertId();
-                $query = "INSERT INTO punches_open (id, id_punches, id_users)"
-                        . "VALUES (:id, :id_punches, :id_users)";
-                $stmt = $db->prepare($query);
-                $stmt->execute(array(
-                    ":id" => null,
-                    ":id_punches" => $last_insert_id,
-                    ":id_users" => $employeeId
-                ));
-                $db->commit();
-                return true;
-            } catch (Exception $ex) {
-                $db->rollback();
-                return $ex->getMessage();
-            }
-        }
-    }
+
 
     private static function Query_CheckIfPunchedIn($db, $employeeId) {
         $query = "SELECT COUNT(*) "
@@ -273,34 +388,6 @@ class Punch {
         }
     }
 
-    private static function Query_GetSingleDayPunchesByEmployeeId($db, $employeeId) {
-        $singleDayPunches = [];
-        $regularPunchesOpen = [];
-        $jobPunchesOpen = [];
-        $regularPunchesPaired = array(
-            'TotalDurationInSeconds' => null,
-            'Punches' => []
-        );
-        $jobPunchesPaired = array(
-            'TotalDurationInSeconds' => null,
-            'Punches' => []
-        );
-
-        $date = date('Y-m-d', strtotime("today")); //TODO: Fix this to enable a user to pass in a date
-        //2016-06-02
-
-        $regularPunchesPaired = self::Query_GetRegularPunchesPairedByEmployeeId($db, $employeeId, $regularPunchesPaired, $date);
-        $regularPunchesOpen = self::Query_GetRegularPunchesOpenByEmployeeId($db, $employeeId, $regularPunchesOpen, $date);
-        $jobPunchesPaired = self::Query_GetJobPunchesPairedByEmployeeId($db, $employeeId, $jobPunchesPaired, $date);
-        $jobPunchesOpen = self::Query_GetJobPunchesOpenByEmployeeId($db, $employeeId, $jobPunchesOpen);
-
-        $singleDayPunches["RegularPunchesOpen"] = $regularPunchesOpen;
-        $singleDayPunches["JobPunchesOpen"] = $jobPunchesOpen;
-        $singleDayPunches["RegularPunchesPaired"] = $regularPunchesPaired;
-        $singleDayPunches["JobPunchesPaired"] = $jobPunchesPaired;
-        return $singleDayPunches;
-    }
-
     private static function Query_GetRegularPunchesPairedByEmployeeId($db, $employeeId, $regularPunchesPaired, $date) {
         $query = "SELECT
                     p.id_parentPunch as ParentId,
@@ -467,112 +554,6 @@ class Punch {
             );
         }
         return $jobPunchesOpen;
-    }
-
-    //Calculate by duration of the punches for each dat as opposed to first punch and last punch, just in case someone punches out for a period of time
-    //TODO: Make this work
-    private static function Query_GetThisWeeksPunchesByEmployeeId($db, $employeeId) {
-        $thisWeeksPunches['PairedPunches'] = [];
-        $regularPunchesOpen = [];
-        $jobPunchesOpen = [];
-        $regularPunchesPaired = array(
-            'TotalDurationInSeconds' => null,
-            'Punches' => []
-        );
-        $jobPunchesPaired = array(
-            'TotalDurationInSeconds' => null,
-            'Punches' => []
-        );
-
-        $query = "SELECT
-                    days.dayDesc AS DayName,
-                    days.date AS Date
-                  FROM(
-                        SELECT 
-                          'Monday' AS dayDesc, 0 AS dayOrder, STR_TO_DATE(CONCAT(YEAR(NOW()), WEEKOFYEAR(NOW()), ' ', 'Monday'), '%X%V %W') AS Date
-                        UNION SELECT
-                          'Tuesday', 1, STR_TO_DATE(CONCAT(YEAR(NOW()), WEEKOFYEAR(NOW()), ' ', 'Tuesday'), '%X%V %W')
-                        UNION SELECT
-                          'Wednesday', 2, STR_TO_DATE(CONCAT(YEAR(NOW()), WEEKOFYEAR(NOW()), ' ', 'Wednesday'), '%X%V %W')
-                        UNION SELECT
-                          'Thursday', 3, STR_TO_DATE(CONCAT(YEAR(NOW()), WEEKOFYEAR(NOW()), ' ', 'Thursday'), '%X%V %W')
-                        UNION SELECT
-                          'Friday', 4, STR_TO_DATE(CONCAT(YEAR(NOW()), WEEKOFYEAR(NOW()), ' ', 'Friday'), '%X%V %W')
-                        UNION SELECT
-                          'Saturday', 5, STR_TO_DATE(CONCAT(YEAR(NOW()), WEEKOFYEAR(NOW()), ' ', 'Saturday'), '%X%V %W')
-                        UNION SELECT
-                          'Sunday', 6, STR_TO_DATE(CONCAT(YEAR(NOW()), (WEEKOFYEAR(NOW()) + 1), ' ', 'Sunday'), '%X%V %W')
-                          ) AS days
-                    LEFT JOIN
-                      (
-                      SELECT SUM(UNIX_TIMESTAMP(punches.datetime) - UNIX_TIMESTAMP(parentPunches.datetime)) AS duration,
-                      parentPunches.datetime
-                      FROM
-                        (
-                          SELECT
-                            punches.id,
-                            punches.datetime AS DATETIME
-                          FROM
-                            punches
-                          WHERE
-                            punches.id_users = :employeeId 
-                            AND punches.id_parentPunch = 0 
-                            AND punches.open_status = 0 
-                            AND WEEKOFYEAR(punches.datetime) = WEEKOFYEAR(NOW())
-                        ) AS parentPunches
-                        LEFT JOIN punches 
-                        ON parentPunches.id = punches.id_parentPunch
-                        GROUP BY WEEKDAY(punches.datetime)
-                      ) AS punches 
-                    ON days.dayOrder = WEEKDAY(punches.datetime)
-                    ORDER BY
-                      days.dayOrder ASC";
-
-        $stmt = $db->prepare($query);
-        $stmt->execute(array(
-            ':employeeId' => $employeeId
-        ));
-
-        $pairedPunches = [];
-        while ($row = $stmt->fetchObject()) {
-            $date = date('Y-m-d', strtotime($row->Date));
-            $thisWeeksPunches['OpenPunches'] = array(
-                "RegularPunchesOpen" => self::Query_GetRegularPunchesOpenByEmployeeId($db, $employeeId, $regularPunchesOpen),
-                "JobPunchesOpen" => self::Query_GetJobPunchesOpenByEmployeeId($db, $employeeId, $jobPunchesOpen)
-            );
-//            $thisWeeksPunches['RegularPunchesOpen'] = self::Query_GetRegularPunchesOpenByEmployeeId($db, $employeeId, $regularPunchesOpen);
-//            $thisWeeksPunches['JobPunchesOpen'] = self::Query_GetJobPunchesOpenByEmployeeId($db, $employeeId, $jobPunchesOpen);
-            array_push($pairedPunches,
-            array(
-            'Date' => $date,
-            'DayName' => $row->DayName,
-            'RegularPunchesPaired' => array(
-            self::Query_GetRegularPunchesPairedByEmployeeId($db, $employeeId, $regularPunchesPaired, $date)
-            ),
-            'JobPunchesPaired' => array(
-            self::Query_GetJobPunchesPairedByEmployeeId($db, $employeeId, $jobPunchesPaired, $date)
-            )
-            )
-            );
-            $thisWeeksPunches['PairedPunches'] = $pairedPunches;
-//            array_push($thisWeeksPunches['DayOfWeekPunch'], array(
-//                'Date' => $date,
-//                'DayName' => $row->DayName,
-//                'RegularPunchesPaired' => array(
-//                    self::Query_GetRegularPunchesPairedByEmployeeId($db, $employeeId, $regularPunchesPaired, $date)
-//                ),
-//                'JobPunchesPaired' => array(
-//                    self::Query_GetJobPunchesPairedByEmployeeId($db, $employeeId, $jobPunchesPaired, $date)
-//                ),
-////                'RegularPunchesOpen' => array(
-////                    self::Query_GetRegularPunchesOpenByEmployeeId($db, $employeeId, $regularPunchesOpen)
-////                ),
-////                'JobPunchesOpen' => array(
-////                    self::Query_GetJobPunchesOpenByEmployeeId($db, $employeeId, $jobPunchesOpen)
-////                )
-//            ));
-        }
-        return $thisWeeksPunches;
     }
 
 }

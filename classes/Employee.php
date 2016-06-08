@@ -173,39 +173,6 @@ class Employee {
         return $punch;
     }
 
-    private static function JobPunchToDb($employeeId, $newJobId) {
-        try {
-            $db = new DBConnect();
-            $db = $db->DBObject;
-
-            //Add the new punch to the Database
-            $query = "INSERT INTO punches_jobs (id, id_jobs, id_parent_punch_jobs, id_users, datetime, type, open_status)"
-                    . "VALUES (:id, :id_jobs, :id_parent_punch_jobs, :id_users, NOW(), :type, :open_status)";
-            $stmt = $db->prepare($query);
-            $stmt->execute(array(
-                ":id" => null,
-                ":id_jobs" => $newJobId,
-                ":id_parent_punch_jobs" => 0,
-                ":id_users" => $employeeId,
-                ":type" => 1,
-                ":open_status" => 1
-            ));
-            $last_insert_id = $db->lastInsertId();
-
-            //Create an "Open" punch for the user
-            $query = "INSERT INTO punches_jobs_open (id, id_punches_jobs, id_users)"
-                    . "VALUES (:id, :id_punches_jobs, :id_users)";
-            $stmt = $db->prepare($query);
-            $stmt->execute(array(
-                ":id" => null,
-                ":id_punches_jobs" => $last_insert_id,
-                ":id_users" => $employeeId
-            ));
-        } catch (Exception $ex) {
-            return $ex->getMessage();
-        }
-    }
-
     private function displayPage($array) {
         header('Location: index.php?' . http_build_query($array));
         exit();

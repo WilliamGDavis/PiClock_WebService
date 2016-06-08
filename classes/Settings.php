@@ -14,6 +14,10 @@
 require_once 'DBConnect.php';
 
 class Settings {
+    /**
+     * Collect any settings saved in the database
+     * @return array
+     */
     public static function GetSettings() {
         $db = new DBConnect();
         $db = $db->DBObject;
@@ -25,8 +29,12 @@ class Settings {
     private static function Query_GetSettings($db) {
         $settings_array = [];
         
-        $query = "SELECT id, name, value "
-                . "FROM settings";
+        $query = "SELECT 
+                    settings.id, 
+                    settings.name, 
+                    settings.value
+                  FROM 
+                    settings";
         $stmt = $db->prepare($query);
         $stmt->execute();
 

@@ -8,10 +8,12 @@
 require_once './classes/Authentication.php';
 require_once './classes/Punch.php';
 require_once './classes/Employee.php';
+require_once './classes/Database.php';
 require_once './classes/Job.php';
+require_once './classes/Settings.php';
 
 class ApiMethods {
-
+    
 }
 
 class ApiMethods_Authentication {
@@ -28,14 +30,6 @@ class ApiMethods_Authentication {
 
 class ApiMethods_Punch {
 
-    public static function GetSingleDayPunchesByEmployeeId($employeeId) {
-        try {
-            return Punch::GetSingleDayPunchesByEmployeeId($employeeId);
-        } catch (Exception $ex) {
-            return $ex->getMessage();
-        }
-    }
-
     function PunchIn($employeeId) {
         try {
             return Punch::PunchIn($employeeId);
@@ -47,6 +41,30 @@ class ApiMethods_Punch {
     function PunchOut($employeeId, $currentJobId) {
         try {
             return Punch::PunchOut($employeeId, $currentJobId);
+        } catch (Exception $ex) {
+            return $ex->getMessage();
+        }
+    }
+
+    public static function PunchIntoJob($employeeId, $currentJobId, $newJobId) {
+        try {
+            return Punch::PunchIntoJob($employeeId, $currentJobId, $newJobId);
+        } catch (Exception $ex) {
+            return $ex->getMessage();
+        }
+    }
+
+    public static function GetSingleDayPunchesByEmployeeId($employeeId) {
+        try {
+            return Punch::GetSingleDayPunchesByEmployeeId($employeeId);
+        } catch (Exception $ex) {
+            return $ex->getMessage();
+        }
+    }
+
+    public static function GetThisWeeksPunchesByEmployeeId($employeeId) {
+        try {
+            return Punch::GetThisWeeksPunchesByEmployeeId($employeeId);
         } catch (Exception $ex) {
             return $ex->getMessage();
         }
@@ -104,6 +122,18 @@ class ApiMethods_Job {
     public static function GetJobIdByJobDescription($jobDescription) {
         try {
             return Job::GetJobIdByJobDescription($jobDescription);
+        } catch (Exception $ex) {
+            return $ex->getMessage();
+        }
+    }
+
+}
+
+class ApiMethods_Settings {
+
+    public static function GetSettings() {
+        try {
+            return Settings::GetSettings();
         } catch (Exception $ex) {
             return $ex->getMessage();
         }

@@ -15,44 +15,6 @@ if (false === $auth->TryHttpBasicAuthentication()) {
 //Decode the POST array to a JSON object
 $postData = json_decode(file_get_contents('php://input'));
 
-function JobPunch($employeeId, $newJobId) {
-    try {
-        return Employee::JobPunch($employeeId, $newJobId);
-    } catch (Exception $ex) {
-        return $ex->getMessage();
-    }
-}
-
-function PunchIntoJob($employeeId, $currentJobId, $newJobId) {
-    try {
-        return Punch::PunchIntoJob($employeeId, $currentJobId, $newJobId);
-    } catch (Exception $ex) {
-        return $ex->getMessage();
-    }
-}
-
-function GetThisWeeksPunchesByEmployeeId($employeeId) {
-    try {
-        return Punch::GetThisWeeksPunchesByEmployeeId($employeeId);
-    } catch (Exception $ex) {
-        return $ex->getMessage();
-    }
-}
-
-function GetSettings() {
-    return Settings::GetSettings();
-}
-
-function get_current_job_by_employee_id($id) {
-    $job = Employee::ReturnCurrentJobByEmployeeId($id);
-
-    if (!empty($job)) {
-        return $job;
-    } else {
-        return NULL;
-    }
-}
-
 $possible_actions = array(
     "GetEmployeeList",
     "PinLogin",
@@ -60,14 +22,13 @@ $possible_actions = array(
     "get_current_job_number",
     "add_user",
     "PunchIn",
+    "PunchIntoJob",
     "PunchOut",
     "CheckLoginStatus",
     "GetSettings",
     "GetCurrentJob",
     "ChangeJob",
     "GetJobIdByJobDescription",
-    "JobPunch",
-    "PunchIntoJob",
     "GetSingleDayPunchesByEmployeeId",
     "GetThisWeeksPunchesByEmployeeId"
 );
@@ -75,7 +36,7 @@ $possible_actions = array(
 $value = "An error has occured";
 
 
-
+//RPC Actions
 if (isset($_GET["action"]) && in_array($_GET["action"], $possible_actions)) {
     switch ($_GET["action"]) {
         default:
@@ -110,12 +71,20 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_actions)) {
                 $value = ApiMethods_Authentication::PinLogin($pin);
             }
             break;
+        /**
+         * Allow a user to Punch In to the database (Regular Punch)
+         * @param string $employeeId
+         */
         case 'PunchIn':
             $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
             if (null !== $employeeId) {
                 $value = ApiMethods_Punch::PunchIn($employeeId);
             }
             break;
+        /**
+         * Allow a user to Punch Out to the database (Regular Punch)
+         * @param string $employeeId
+         */
         case 'PunchOut':
             $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
             $currentJobId = (isset($postData->currentJobId)) ? $postData->currentJobId : null;
@@ -172,23 +141,25 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_actions)) {
                 $value = (int) ApiMethods_Job::GetJobIdByJobDescription($jobDescription);
             }
             break;
-        case 'JobPunch':
-            $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
-            $newJobId = (isset($postData->newJobId)) ? $postData->newJobId : null;
-            if (null !== $employeeId && null !== $newJobId) {
-                $value = JobPunch($employeeId, $newJobId);
-            }
-            break;
+        /**
+         * Punch an employee into a job
+         * @param string $employeeId
+         * @param string $currentJobId
+         * @param string $newJobid
+         */
         case 'PunchIntoJob':
             $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
             $currentJobId = (isset($postData->currentJobId)) ? $postData->currentJobId : null;
             $newJobId = (isset($postData->newJobId)) ? $postData->newJobId : null;
             if (null !== $employeeId && null !== $currentJobId && null !== $newJobId) {
-                $value = PunchIntoJob($employeeId, $currentJobId, $newJobId);
+                $value = ApiMethods_Punch::PunchIntoJob($employeeId, $currentJobId, $newJobId);
             }
             break;
+        /**
+         * Return an array of settings saved in the database
+         */
         case 'GetSettings':
-            $value = GetSettings();
+            $value = ApiMethods_Settings::GetSettings();
             break;
         /**
          * Return an array of an employee's punches for the day
@@ -202,19 +173,25 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_actions)) {
                 $value = ApiMethods_Punch::GetSingleDayPunchesByEmployeeId($employeeId);
             }
             break;
+        /**
+         * Return an array of an employee's punches for the week
+         * @param string $employeeId
+         * @return array
+         * @return string $ex->message
+         */
         case "GetThisWeeksPunchesByEmployeeId":
             $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
             if (null !== $employeeId) {
-                $value = GetThisWeeksPunchesByEmployeeId($employeeId);
+                $value = ApiMethods_Punch::GetThisWeeksPunchesByEmployeeId($employeeId);
             }
             break;
         default:
             break;
     }
 } elseif ($_SERVER['REQUEST_METHOD'] == 'PUT') {
-    
+
 }
 
-//return JSON string
+//Return JSON-Encoded string
 header('Content-type: application/json');
 exit(json_encode($value));
