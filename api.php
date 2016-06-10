@@ -1,9 +1,7 @@
 <?php
+//TODO: Force an SSL connection and die if there isn't one available
 
-require_once './classes/DBConnect.php';
-require_once './classes/Employee.php';
-require_once './classes/Punch.php';
-require_once './classes/Settings.php';
+require_once './classes/Authentication.php';
 require_once './classes/ApiMethods.php';
 
 //Basic HTTP Authentication
@@ -132,13 +130,14 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_actions)) {
         /**
          * Return the Job Id from the database, based on the Job Description
          * @param string $jobDescription
-         * @return Int
+         * @return string jobId
+         * @return string "false" if non-existing jobId
          * TODO: Should this be returning an INT???
          */
         case 'GetJobIdByJobDescription':
             $jobDescription = (isset($postData->jobDescription)) ? $postData->jobDescription : null;
             if (null !== $jobDescription) {
-                $value = (int) ApiMethods_Job::GetJobIdByJobDescription($jobDescription);
+                $value = ApiMethods_Job::GetJobIdByJobDescription($jobDescription);
             }
             break;
         /**
