@@ -31,19 +31,11 @@ class ApiMethods_Authentication {
 class ApiMethods_Punch {
 
     function PunchIn($employeeId) {
-        try {
-            return Punch::PunchIn($employeeId);
-        } catch (Exception $ex) {
-            return $ex->getMessage();
-        }
+        return Punch::PunchIn($employeeId);
     }
 
     function PunchOut($employeeId, $currentJobId) {
-        try {
-            return Punch::PunchOut($employeeId, $currentJobId);
-        } catch (Exception $ex) {
-            return $ex->getMessage();
-        }
+        return Punch::PunchOut($employeeId, $currentJobId);
     }
 
     public static function PunchIntoJob($employeeId, $currentJobId, $newJobId) {
@@ -55,19 +47,11 @@ class ApiMethods_Punch {
     }
 
     public static function GetSingleDayPunchesByEmployeeId($employeeId) {
-        try {
-            return Punch::GetSingleDayPunchesByEmployeeId($employeeId);
-        } catch (Exception $ex) {
-            return $ex->getMessage();
-        }
+        return Punch::GetSingleDayPunchesByEmployeeId($employeeId);
     }
 
     public static function GetThisWeeksPunchesByEmployeeId($employeeId) {
-        try {
-            return Punch::GetThisWeeksPunchesByEmployeeId($employeeId);
-        } catch (Exception $ex) {
-            return $ex->getMessage();
-        }
+        return Punch::GetThisWeeksPunchesByEmployeeId($employeeId);
     }
 
 }
@@ -120,11 +104,7 @@ class ApiMethods_Job {
     }
 
     public static function GetJobIdByJobDescription($jobDescription) {
-        try {
-            return Job::GetJobIdByJobDescription($jobDescription);
-        } catch (Exception $ex) {
-            return $ex->getMessage();
-        }
+        return Job::GetJobIdByJobDescription($jobDescription);
     }
 
 }

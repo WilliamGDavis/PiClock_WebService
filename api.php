@@ -72,6 +72,8 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_actions)) {
         /**
          * Allow a user to Punch In to the database (Regular Punch)
          * @param string $employeeId
+         * @return string "true" (Successful)
+         * @return string "false" (Unsuccessful or Employee already punched in)
          */
         case 'PunchIn':
             $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
@@ -131,8 +133,7 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_actions)) {
          * Return the Job Id from the database, based on the Job Description
          * @param string $jobDescription
          * @return string jobId
-         * @return string "false" if non-existing jobId
-         * TODO: Should this be returning an INT???
+         * @return string "" if non-existing jobId
          */
         case 'GetJobIdByJobDescription':
             $jobDescription = (isset($postData->jobDescription)) ? $postData->jobDescription : null;
@@ -156,6 +157,7 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_actions)) {
             break;
         /**
          * Return an array of settings saved in the database
+         * @return array
          */
         case 'GetSettings':
             $value = ApiMethods_Settings::GetSettings();

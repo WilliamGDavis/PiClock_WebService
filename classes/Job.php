@@ -172,7 +172,8 @@ class Job {
     /**
      * Return a job Id from the database based on a job description
      * @param string $jobDescription
-     * @return string job Id
+     * @return string JobId (Successful)
+     * @return string "" (No results from Database)
      */
     public static function GetJobIdByJobDescription($jobDescription) {
         $db = new DBConnect();
@@ -195,7 +196,7 @@ class Job {
             ":jobDescription" => $jobDescription
         ));
 
-        return $stmt->fetchColumn();
+        return (string)$stmt->fetchColumn();
     }
 
 }

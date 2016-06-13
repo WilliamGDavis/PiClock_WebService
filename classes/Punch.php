@@ -10,11 +10,10 @@ require_once './classes/DBConnect.php';
 class Punch {
 
     /**
-     * Punch a user into the database (Regular Punch)
+     * Punch an employee into the database (Regular Punch)
      * @param string $employeeId
-     * @return bool true or false
-     * @return string $ex->message
-     * TODO: Get consistent returns
+     * @return string "true" (Successful)
+     * #return string "false" (Unsuccessful)
      */
     public static function PunchIn($employeeId) {
         $db = new DBConnect();
@@ -28,7 +27,7 @@ class Punch {
         //Check to see if a user is currently punched in to the database
         $currentlyLoggedIn = self::Query_CheckIfPunchedIn($db, $employeeId);
         if (true === $currentlyLoggedIn) {
-            return false;
+            return "false";
         }
         try {
             $db->beginTransaction();
@@ -53,13 +52,21 @@ class Punch {
                 ":id_users" => $employeeId
             ));
             $db->commit();
-            return true;
-        } catch (Exception $ex) {
+            return "true";
+        } catch (PDOException $ex) {
             $db->rollback();
-            return $ex->getMessage();
+            //TODO: Write $ex->error messages to database using the custom error_handler method in DBConnect
+            return "false";
         }
     }
 
+    /**
+     * Punch an employee out of the database (Regular Punch)
+     * @param string $employeeId
+     * @param string $currentJobId
+     * @return string "true" (Successful)
+     * #return string "false" (Unsuccessful)
+     */
     public static function PunchOut($employeeId, $currentJobId) {
         $db = new DBConnect();
         $db = $db->DBObject;
@@ -296,9 +303,11 @@ class Punch {
                 self::Query_PunchOutOfJob($db, $employeeId, $currentJobId);
             }
             $db->commit();
+            return "true";
         } catch (Exception $ex) {
             $db->rollback();
-            return $ex->getMessage();
+            //TODO: Write $ex->error messages to database using the custom error_handler method in DBConnect
+            return "false";
         }
     }
 
