@@ -54,9 +54,14 @@ class Employee {
     }
 
     private static function Query_CheckLoginStatus($db, $employeeId) {
-        $query = "SELECT COUNT(*) "
-                . "FROM `punches_open` "
-                . "WHERE id_users = :id_users";
+        $query = "SELECT 
+                    COUNT(*) 
+                  FROM 
+                    punches
+                  WHERE 
+                    punches.id_users = :id_users 
+                    AND punches.open_status = 1 
+                  LIMIT 1";
         $stmt = $db->prepare($query);
         $stmt->execute(array(
             ":id_users" => $employeeId
@@ -98,17 +103,21 @@ class Employee {
      */
     private static function Query_GetCurrentJob($db, $employeeId) {
         $currentJobArray = [];
-        $query = "SELECT jobs.id,
-                             jobs.description,
-                             jobs.code,
-                             jobs.active
-                        FROM punches_jobs_open
-                        INNER JOIN punches_jobs
-                        ON punches_jobs.id = punches_jobs_open.id_punches_jobs
-                        INNER JOIN jobs
-                        ON jobs.id = punches_jobs.id_jobs
-                        WHERE punches_jobs_open.id_users = :id_users
-                        LIMIT 1";
+        $query = "SELECT 
+                    jobs.id,
+                    jobs.description,
+                    jobs.code,
+                    jobs.active
+                  FROM 
+                    jobs
+                  INNER JOIN 
+                    punches_jobs
+                  ON 
+                    jobs.id = punches_jobs.id_jobs
+                  WHERE 
+                    punches_jobs.id_users = :id_users
+                    AND punches_jobs.open_status = 1
+                  LIMIT 1";
         $stmt = $db->prepare($query);
         $stmt->execute(array(
             ":id_users" => $employeeId

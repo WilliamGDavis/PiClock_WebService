@@ -49,6 +49,10 @@ class ApiMethods_Punch {
     public static function GetSingleDayPunchesByEmployeeId($employeeId) {
         return Punch::GetSingleDayPunchesByEmployeeId($employeeId);
     }
+    
+    public static function GetRangePunchesByEmployeeId($employeeId){
+        return Punch::GetRangePunchesByEmployeeId($employeeId);
+    }
 
     public static function GetThisWeeksPunchesByEmployeeId($employeeId) {
         return Punch::GetThisWeeksPunchesByEmployeeId($employeeId);
@@ -95,13 +99,13 @@ class ApiMethods_Database {
 
 class ApiMethods_Job {
 
-    public static function ChangeJob($employeeId, $jobId, $newJobId) {
-        try {
-            return Job::ChangeJob($employeeId, $jobId, $newJobId);
-        } catch (Exception $ex) {
-            return $ex->getMessage();
-        }
-    }
+//    public static function ChangeJob($employeeId, $jobId, $newJobId) {
+//        try {
+//            return Job::ChangeJob($employeeId, $jobId, $newJobId);
+//        } catch (Exception $ex) {
+//            return $ex->getMessage();
+//        }
+//    }
 
     public static function GetJobIdByJobDescription($jobDescription) {
         return Job::GetJobIdByJobDescription($jobDescription);

@@ -25,9 +25,10 @@ $possible_actions = array(
     "CheckLoginStatus",
     "GetSettings",
     "GetCurrentJob",
-    "ChangeJob",
+//    "ChangeJob",
     "GetJobIdByJobDescription",
     "GetSingleDayPunchesByEmployeeId",
+    "GetRangePunchesByEmployeeId",
     "GetThisWeeksPunchesByEmployeeId"
 );
 
@@ -115,20 +116,20 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_actions)) {
                 $value = ApiMethods_Employee::GetCurrentJob($employeeId);
             }
             break;
-        /**
-         * Change the job an employee is punched into
-         * @param string $employeeId
-         * @param string $jobId
-         * @param string $newJobId
-         */
-        case 'ChangeJob':
-            $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
-            $jobId = (isset($postData->jobId)) ? $postData->jobId : null;
-            $newJobId = (isset($postData->newJobId)) ? $postData->newJobId : null;
-            if (null !== $employeeId && null !== $jobId && null !== $newJobId) {
-                $value = ApiMethods_Job::ChangeJob($employeeId, $jobId, $newJobId);
-            }
-            break;
+//        /**
+//         * Change the job an employee is punched into
+//         * @param string $employeeId
+//         * @param string $jobId
+//         * @param string $newJobId
+//         */
+//        case 'ChangeJob':
+//            $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
+//            $jobId = (isset($postData->jobId)) ? $postData->jobId : null;
+//            $newJobId = (isset($postData->newJobId)) ? $postData->newJobId : null;
+//            if (null !== $employeeId && null !== $jobId && null !== $newJobId) {
+//                $value = ApiMethods_Job::ChangeJob($employeeId, $jobId, $newJobId);
+//            }
+//            break;
         /**
          * Return the Job Id from the database, based on the Job Description
          * @param string $jobDescription
@@ -172,6 +173,12 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_actions)) {
             $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
             if (null !== $employeeId) {
                 $value = ApiMethods_Punch::GetSingleDayPunchesByEmployeeId($employeeId);
+            }
+            break;
+        case "GetRangePunchesByEmployeeId":
+            $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
+            if (null !== $employeeId) {
+                $value = ApiMethods_Punch::GetRangePunchesByEmployeeId($employeeId);
             }
             break;
         /**
