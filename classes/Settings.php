@@ -1,15 +1,9 @@
 <?php
-
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 /**
  * Description of Settings
  *
- * @author Owner
+ * @author William G Davis
+ * @copyright (c) 2016, William G Davis
  */
 require_once 'DBConnect.php';
 
@@ -26,6 +20,7 @@ class Settings {
         return $settings_array;
     }
     
+    //========================== Database Queries ==========================
     private static function Query_GetSettings($db) {
         $settings_array = [];
         

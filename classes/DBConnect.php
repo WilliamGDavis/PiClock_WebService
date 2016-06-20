@@ -71,17 +71,19 @@ class DBConnect {
      * Return: The error number, string, file, and location to the database
      */
 
-    static function db_errorHandler($db, $errno, $errstr, $errfile, $errline) {
-        $query = "INSERT INTO `error_log` "
-                . "VALUES(:id,:error_time,:errno,:errstr,:errfile,:errline)";
+//    static function db_errorHandler($db, $errno, $errstr, $errfile, $errline) {
+    static function db_errorHandler($db, PDOException $ex) {
+        $query = "INSERT INTO 
+                    error_log
+                  VALUES (:id,:error_time,:errno,:errstr,:errfile,:errline)";
         $stmt = $db->prepare($query);
         $stmt->execute(array(
             ':id' => NULL,
             ':error_time' => NULL,
-            ':errno' => $errno,
-            ':errstr' => $errstr,
-            ':errfile' => $errfile,
-            ':errline' => $errline
+            ':errno' => $ex->getCode(),
+            ':errstr' => $ex->getMessage(),
+            ':errfile' => $ex->getFile(),
+            ':errline' => $ex->getLine()
         ));
         return true; //Don't execute PHP error handler
     }

@@ -21,7 +21,7 @@ class ApiMethods_Authentication {
     public static function PinLogin($pin) {
         try {
             return Authentication::PinLogin($pin);
-        } catch (Exception $ex) {
+        } catch (PDOException $ex) {
             return $ex->getMessage();
         }
     }
@@ -51,7 +51,7 @@ class ApiMethods_Punch {
     }
     
     public static function GetRangePunchesByEmployeeId($employeeId){
-        return Punch::GetRangePunchesByEmployeeId($employeeId);
+        return Punch::GetRegularPunchesBetweenDates($employeeId);
     }
 
     public static function GetThisWeeksPunchesByEmployeeId($employeeId) {
@@ -98,14 +98,6 @@ class ApiMethods_Database {
 }
 
 class ApiMethods_Job {
-
-//    public static function ChangeJob($employeeId, $jobId, $newJobId) {
-//        try {
-//            return Job::ChangeJob($employeeId, $jobId, $newJobId);
-//        } catch (Exception $ex) {
-//            return $ex->getMessage();
-//        }
-//    }
 
     public static function GetJobIdByJobDescription($jobDescription) {
         return Job::GetJobIdByJobDescription($jobDescription);

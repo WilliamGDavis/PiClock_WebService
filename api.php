@@ -1,11 +1,15 @@
 <?php
 //TODO: Force an SSL connection and die if there isn't one available
+if("on"  !== $_SERVER["HTTPS"]){
+    exit(json_encode("You must connect over an SSL connection"));
+}
 
-require_once './classes/Authentication.php';
+//require_once './classes/Authentication.php';
+require_once './classes/HttpBasicAuthentication.php';
 require_once './classes/ApiMethods.php';
 
 //Basic HTTP Authentication
-$auth = new Authentication_Api();
+$auth = new HttpBasicAuthentication();
 if (false === $auth->TryHttpBasicAuthentication()) {
     exit(json_encode("An error has occured"));
 }
@@ -116,20 +120,6 @@ if (isset($_GET["action"]) && in_array($_GET["action"], $possible_actions)) {
                 $value = ApiMethods_Employee::GetCurrentJob($employeeId);
             }
             break;
-//        /**
-//         * Change the job an employee is punched into
-//         * @param string $employeeId
-//         * @param string $jobId
-//         * @param string $newJobId
-//         */
-//        case 'ChangeJob':
-//            $employeeId = (isset($postData->employeeId)) ? $postData->employeeId : null;
-//            $jobId = (isset($postData->jobId)) ? $postData->jobId : null;
-//            $newJobId = (isset($postData->newJobId)) ? $postData->newJobId : null;
-//            if (null !== $employeeId && null !== $jobId && null !== $newJobId) {
-//                $value = ApiMethods_Job::ChangeJob($employeeId, $jobId, $newJobId);
-//            }
-//            break;
         /**
          * Return the Job Id from the database, based on the Job Description
          * @param string $jobDescription
